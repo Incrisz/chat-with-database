@@ -1,4 +1,5 @@
 # Chatdb.AI  App
+# For mysql and postgresql 
 
 # Clone 
 ```bash
