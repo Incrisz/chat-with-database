@@ -9,72 +9,76 @@ from pygments.lexers import SqlLexer
 from pygments.formatters.html import HtmlFormatter
 import google.generativeai as genai
 
-# ✅ Set Streamlit page config FIRST
 st.set_page_config(page_title="DB Chat Assistant", layout="wide")
-
-# Load existing .env configuration if available
 load_dotenv()
 
-# ─────────────────────────────
-# Streamlit Sidebar: DB Config
-# ─────────────────────────────
-st.sidebar.title("Database Configuration")
-# config_mode = st.sidebar.radio("Configuration Mode", ["Use .env", "Manual Entry"])
-config_mode = st.sidebar.radio("Configuration Mode", ["Manual Entry"])
+if "config_expanded" not in st.session_state:
+    st.session_state.config_expanded = True  # start expanded
 
-if config_mode == "Manual Entry":
-    db_type = st.sidebar.selectbox("Database Type", ["mysql", "postgresql"], index=0)
-    db_host = st.sidebar.text_input("Host", os.getenv("DB_HOST", "localhost"))
-    db_port = st.sidebar.number_input("Port", value=int(os.getenv("DB_PORT", 3306 if db_type == "mysql" else 5432)))
-    db_user = st.sidebar.text_input("User", os.getenv("DB_USER", "root"))
-    db_password = st.sidebar.text_input("Password", type="password", value=os.getenv("DB_PASSWORD", ""))
-    db_name = st.sidebar.text_input("Database Name", os.getenv("DB_NAME", "testdb"))
-else:
-    db_type = os.getenv("DB_TYPE", "mysql").lower()
-    db_host = os.getenv("DB_HOST", "localhost")
-    db_port = int(os.getenv("DB_PORT", 3306))
-    db_user = os.getenv("DB_USER", "root")
-    db_password = os.getenv("DB_PASSWORD", "")
-    db_name = os.getenv("DB_NAME", "testdb")
+with st.sidebar.expander("🛠️ Configuration Panel", expanded=st.session_state.config_expanded):
 
-# ─────────────────────────────
-# Sidebar - AI Configuration
-# ─────────────────────────────
-st.sidebar.header("AI Configuration")
-ai_provider = st.sidebar.selectbox("Choose AI Provider", ["OPENAI", "GEMINI"], index=0 if os.getenv("AI_PROVIDER", "OPENAI").upper() == "OPENAI" else 1)
+    st.title("Database Configuration")
+    config_mode = st.radio("Configuration Mode", ["Manual Entry"])
 
-if ai_provider == "OPENAI":
-    openai_api_key = st.sidebar.text_input("OpenAI API Key", value=os.getenv("OPENAI_API_KEY", ""), type="password")
-    openai_model = st.sidebar.text_input("OpenAI Model", value=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"))
-    gemini_api_key = ""
-    gemini_model = ""
-else:
-    gemini_api_key = st.sidebar.text_input("Gemini API Key", value=os.getenv("GEMINI_API_KEY", ""), type="password")
-    gemini_model = st.sidebar.text_input("Gemini Model", value=os.getenv("GEMINI_MODEL", "gemini-1.5-pro"))
-    openai_api_key = ""
-    openai_model = ""
-
-# Save Config Button
-if st.sidebar.button("💾 Save Configuration"):
-    dotenv_path = ".env"
-    set_key(dotenv_path, "DB_TYPE", db_type)
-    set_key(dotenv_path, "DB_HOST", db_host)
-    set_key(dotenv_path, "DB_PORT", str(db_port))
-    set_key(dotenv_path, "DB_USER", db_user)
-    set_key(dotenv_path, "DB_PASSWORD", db_password)
-    set_key(dotenv_path, "DB_NAME", db_name)
-    set_key(dotenv_path, "AI_PROVIDER", ai_provider)
-    if ai_provider == "OPENAI":
-        set_key(dotenv_path, "OPENAI_API_KEY", openai_api_key)
-        set_key(dotenv_path, "OPENAI_MODEL", openai_model)
-        set_key(dotenv_path, "GEMINI_API_KEY", "")
-        set_key(dotenv_path, "GEMINI_MODEL", "")
+    if config_mode == "Manual Entry":
+        db_type = st.selectbox("Database Type", ["mysql", "postgresql"], index=0)
+        db_host = st.text_input("Host", os.getenv("DB_HOST", "localhost"))
+        db_port = st.number_input("Port", value=int(os.getenv("DB_PORT", 3306 if db_type == "mysql" else 5432)))
+        db_user = st.text_input("User", os.getenv("DB_USER", "root"))
+        db_password = st.text_input("Password", type="password", value=os.getenv("DB_PASSWORD", ""))
+        db_name = st.text_input("Database Name", os.getenv("DB_NAME", "testdb"))
     else:
-        set_key(dotenv_path, "GEMINI_API_KEY", gemini_api_key)
-        set_key(dotenv_path, "GEMINI_MODEL", gemini_model)
-        set_key(dotenv_path, "OPENAI_API_KEY", "")
-        set_key(dotenv_path, "OPENAI_MODEL", "")
-    st.sidebar.success("Configuration saved to .env file!")
+        db_type = os.getenv("DB_TYPE", "mysql").lower()
+        db_host = os.getenv("DB_HOST", "localhost")
+        db_port = int(os.getenv("DB_PORT", 3306))
+        db_user = os.getenv("DB_USER", "root")
+        db_password = os.getenv("DB_PASSWORD", "")
+        db_name = os.getenv("DB_NAME", "testdb")
+
+    st.header("AI Configuration")
+    ai_provider = st.selectbox("Choose AI Provider", ["OPENAI", "GEMINI"], index=0 if os.getenv("AI_PROVIDER", "OPENAI").upper() == "OPENAI" else 1)
+
+    if ai_provider == "OPENAI":
+        openai_api_key = st.text_input("OpenAI API Key", value=os.getenv("OPENAI_API_KEY", ""), type="password")
+        openai_model = st.text_input("OpenAI Model", value=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"))
+        gemini_api_key = ""
+        gemini_model = ""
+    else:
+        gemini_api_key = st.text_input("Gemini API Key", value=os.getenv("GEMINI_API_KEY", ""), type="password")
+        gemini_model = st.text_input("Gemini Model", value=os.getenv("GEMINI_MODEL", "gemini-1.5-pro"))
+        openai_api_key = ""
+        openai_model = ""
+
+    if st.button("💾 Save Configuration"):
+        dotenv_path = ".env"
+        set_key(dotenv_path, "DB_TYPE", db_type)
+        set_key(dotenv_path, "DB_HOST", db_host)
+        set_key(dotenv_path, "DB_PORT", str(db_port))
+        set_key(dotenv_path, "DB_USER", db_user)
+        set_key(dotenv_path, "DB_PASSWORD", db_password)
+        set_key(dotenv_path, "DB_NAME", db_name)
+        set_key(dotenv_path, "AI_PROVIDER", ai_provider)
+        if ai_provider == "OPENAI":
+            set_key(dotenv_path, "OPENAI_API_KEY", openai_api_key)
+            set_key(dotenv_path, "OPENAI_MODEL", openai_model)
+            set_key(dotenv_path, "GEMINI_API_KEY", "")
+            set_key(dotenv_path, "GEMINI_MODEL", "")
+        else:
+            set_key(dotenv_path, "GEMINI_API_KEY", gemini_api_key)
+            set_key(dotenv_path, "GEMINI_MODEL", gemini_model)
+            set_key(dotenv_path, "OPENAI_API_KEY", "")
+            set_key(dotenv_path, "OPENAI_MODEL", "")
+        st.success("Configuration saved to .env file!")
+        st.session_state.config_expanded = False
+        st.experimental_rerun()
+
+if not st.session_state.config_expanded:
+    if st.sidebar.button("⚙️ Edit Configuration"):
+        st.session_state.config_expanded = True
+        st.experimental_rerun()
+
+# -- rest of your app code below (SQL generation, execution, etc.) --
+
 
 # Set API keys for use in code
 openai.api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
