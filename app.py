@@ -7,26 +7,32 @@ from dotenv import load_dotenv
 from pygments import highlight
 from pygments.lexers import SqlLexer
 from pygments.formatters import HtmlFormatter
+import google.generativeai as genai
 
+# Load .env configuration
 load_dotenv()
 
-# Load environment variables
+# Set API keys
 openai.api_key = os.getenv("OPENAI_API_KEY")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-DB_TYPE = os.getenv("DB_TYPE", "mysql")
+# Load DB config
+DB_TYPE = os.getenv("DB_TYPE", "mysql").lower()
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", 3306))
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME = os.getenv("DB_NAME", "testdb")
-
+AI_PROVIDER = os.getenv("AI_PROVIDER", "OPENAI").upper()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "models/gemini-pro")
 
-# Helper function for syntax highlighting
+# Utility: SQL syntax highlighting
 def highlight_sql(code, theme="monokai"):
     formatter = HtmlFormatter(style=theme, noclasses=True)
     return highlight(code, SqlLexer(), formatter)
 
+# Connect to DB
 def connect_to_db():
     if DB_TYPE == "postgresql":
         return psycopg2.connect(
@@ -47,17 +53,32 @@ def connect_to_db():
     else:
         raise ValueError("Unsupported DB_TYPE")
 
+# Generate SQL with AI
 def generate_sql(prompt):
-    response = openai.chat.completions.create(
-        model=OPENAI_MODEL,
-        messages=[
-            {"role": "system", "content": f"You are an expert SQL assistant for a {DB_TYPE} database."},
-            {"role": "user", "content": f"Generate an SQL query for: {prompt}"}
-        ],
-        temperature=0
-    )
-    return response.choices[0].message['content'].strip()
+    system_prompt = f"You are an expert SQL assistant for a {DB_TYPE} database. Generate only the SQL query, nothing else."
 
+    if AI_PROVIDER == "GEMINI":
+        model = genai.GenerativeModel(GEMINI_MODEL)
+        response = model.generate_content(f"{system_prompt}\nQuery: {prompt}")
+        try:
+            return response.text.strip()
+        except AttributeError:
+            return response.candidates[0].content.parts[0].text.strip()
+
+    elif AI_PROVIDER == "OPENAI":
+        response = openai.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0
+        )
+        return response.choices[0].message.content.strip()
+    else:
+        raise ValueError("Unsupported AI_PROVIDER. Use 'OPENAI' or 'GEMINI'.")
+
+# Execute query
 def execute_query(sql):
     conn = connect_to_db()
     cursor = conn.cursor()
@@ -76,21 +97,21 @@ def execute_query(sql):
         cursor.close()
         conn.close()
 
-# Streamlit UI setup
+# ─────────────────────────────
+# Streamlit UI Starts Here
+# ─────────────────────────────
 st.set_page_config(page_title="DB Chat Assistant", layout="wide")
 st.title("💬 Natural Language to SQL - DB Chat Assistant")
 
-# Theme selector
 theme = st.selectbox("🎨 Choose SQL Highlight Theme", [
     "default", "monokai", "dracula", "friendly", "colorful",
     "murphy", "native", "solarized-dark", "solarized-light", "vs"
 ], index=1)
 
-# Initialize session state for chat history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Sidebar - Chat history
+# Sidebar - Chat History
 with st.sidebar:
     st.header("📝 Chat History")
     if st.session_state.chat_history:
@@ -109,12 +130,12 @@ with st.sidebar:
     else:
         st.info("No chat history yet.")
 
-# Main UI for input
+# Main Input Area
 user_prompt = st.text_area("Ask something about your database:", placeholder="E.g. Show me all users who signed up in the last 7 days.")
 
+# Chat UI Display
 st.subheader("🗨️ Chat with Database")
 
-# Show full chat interaction in main area
 if st.session_state.chat_history:
     for record in st.session_state.chat_history:
         with st.chat_message("user"):
@@ -131,13 +152,14 @@ if st.session_state.chat_history:
             else:
                 st.info("No results returned.")
 
+# Generate & Execute Button
 if st.button("Generate & Execute SQL"):
     if not user_prompt.strip():
         st.warning("Please enter a prompt.")
     else:
-        with st.spinner("Generating SQL..."):
+        with st.spinner(f"Generating SQL with {AI_PROVIDER}..."):
             sql_query = generate_sql(user_prompt)
-        
+
         st.markdown(highlight_sql(sql_query, theme), unsafe_allow_html=True)
 
         execute = st.checkbox("Execute query?", value=True)
@@ -159,7 +181,7 @@ if st.button("Generate & Execute SQL"):
         else:
             columns, data, error = None, None, None
 
-        # Save to chat history
+        # Save to history
         st.session_state.chat_history.append({
             "prompt": user_prompt,
             "sql": sql_query,
