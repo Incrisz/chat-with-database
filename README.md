@@ -5,6 +5,13 @@
 git clone https://github.com/Incrisz/chat-with-database.git
 cd chat-with-database
 ```
+# server requirements (this section is not needed locally)
+```bash
+sudo apt update
+sudo apt update
+sudo apt install -y build-essential python3-dev libpq-dev libmysqlclient-dev zlib1g-dev libjpeg-dev libfreetype6-dev
+
+```
 
 # Install
 ```bash

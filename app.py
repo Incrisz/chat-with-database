@@ -1,7 +1,7 @@
 import os
 import openai
 import streamlit as st
-import mysql.connector
+import pymysql
 import psycopg2
 from dotenv import load_dotenv
 from pygments import highlight
@@ -25,7 +25,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME = os.getenv("DB_NAME", "testdb")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "OPENAI").upper()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "models/gemini-pro")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
 
 # Utility: SQL syntax highlighting
 def highlight_sql(code, theme="monokai"):
@@ -43,7 +43,7 @@ def connect_to_db():
             dbname=DB_NAME
         )
     elif DB_TYPE == "mysql":
-        return mysql.connector.connect(
+        return pymysql.connect(
             host=DB_HOST,
             port=DB_PORT,
             user=DB_USER,
