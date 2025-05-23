@@ -4,6 +4,9 @@ import streamlit as st
 import mysql.connector
 import psycopg2
 from dotenv import load_dotenv
+from pygments import highlight
+from pygments.lexers import SqlLexer
+from pygments.formatters import HtmlFormatter
 
 load_dotenv()
 
@@ -18,6 +21,11 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME = os.getenv("DB_NAME", "testdb")
 
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+
+# Helper function for syntax highlighting
+def highlight_sql(code, theme="monokai"):
+    formatter = HtmlFormatter(style=theme, noclasses=True)
+    return highlight(code, SqlLexer(), formatter)
 
 def connect_to_db():
     if DB_TYPE == "postgresql":
@@ -61,7 +69,7 @@ def execute_query(sql):
             return columns, data, None
         else:
             conn.commit()
-            return None, f"Query executed successfully.", None
+            return None, "Query executed successfully.", None
     except Exception as e:
         return None, None, str(e)
     finally:
@@ -71,6 +79,12 @@ def execute_query(sql):
 # Streamlit UI setup
 st.set_page_config(page_title="DB Chat Assistant", layout="wide")
 st.title("💬 Natural Language to SQL - DB Chat Assistant")
+
+# Theme selector
+theme = st.selectbox("🎨 Choose SQL Highlight Theme", [
+    "default", "monokai", "dracula", "friendly", "colorful",
+    "murphy", "native", "solarized-dark", "solarized-light", "vs"
+], index=1)
 
 # Initialize session state for chat history
 if "chat_history" not in st.session_state:
@@ -83,9 +97,11 @@ with st.sidebar:
         for i, record in enumerate(reversed(st.session_state.chat_history)):
             with st.expander(f"Query #{len(st.session_state.chat_history) - i}"):
                 st.markdown(f"**Prompt:** {record['prompt']}")
-                st.code(record['sql'], language="sql")
+                st.markdown(highlight_sql(record["sql"], theme), unsafe_allow_html=True)
                 if record['error']:
                     st.error(f"Error: {record['error']}")
+                elif isinstance(record['data'], str):
+                    st.success(record['data'])
                 elif record['data']:
                     st.write(f"Result: {len(record['data'])} rows")
                 else:
@@ -96,6 +112,25 @@ with st.sidebar:
 # Main UI for input
 user_prompt = st.text_area("Ask something about your database:", placeholder="E.g. Show me all users who signed up in the last 7 days.")
 
+st.subheader("🗨️ Chat with Database")
+
+# Show full chat interaction in main area
+if st.session_state.chat_history:
+    for record in st.session_state.chat_history:
+        with st.chat_message("user"):
+            st.markdown(record["prompt"])
+        with st.chat_message("assistant"):
+            st.markdown("**Generated SQL:**")
+            st.markdown(highlight_sql(record["sql"], theme), unsafe_allow_html=True)
+            if record["error"]:
+                st.error(f"Error: {record['error']}")
+            elif isinstance(record["data"], str):
+                st.success(record["data"])
+            elif record["data"]:
+                st.dataframe(record["data"], use_container_width=True, hide_index=True)
+            else:
+                st.info("No results returned.")
+
 if st.button("Generate & Execute SQL"):
     if not user_prompt.strip():
         st.warning("Please enter a prompt.")
@@ -103,7 +138,7 @@ if st.button("Generate & Execute SQL"):
         with st.spinner("Generating SQL..."):
             sql_query = generate_sql(user_prompt)
         
-        st.code(sql_query, language='sql')
+        st.markdown(highlight_sql(sql_query, theme), unsafe_allow_html=True)
 
         execute = st.checkbox("Execute query?", value=True)
 
