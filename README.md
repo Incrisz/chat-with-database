@@ -9,7 +9,7 @@ cd chat-with-database
 ```bash
 sudo apt update
 sudo apt install -y build-essential python3-dev libpq-dev libmysqlclient-dev zlib1g-dev libjpeg-dev libfreetype6-dev
-sudo apt install python3.12-venv
+sudo apt install python3.12-venv -y
 sudo apt install python3-pip -y
 
 ```
