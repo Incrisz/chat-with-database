@@ -29,7 +29,7 @@ cp .env.example .env
 
 # Run
 ```bash
-streamlit run app.py
+streamlit run appV2.py
 ```
 
 
