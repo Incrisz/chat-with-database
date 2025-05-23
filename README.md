@@ -25,6 +25,10 @@ cp .env.example .env
 streamlit run app.py
 ```
 
+
+## Other Apps like this are 
+https://www.askyourdatabase.com
+Vanna Ai
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
 # chat-with-database
