@@ -8,6 +8,8 @@ from pygments import highlight
 from pygments.lexers import SqlLexer
 from pygments.formatters import HtmlFormatter
 import google.generativeai as genai
+import re
+
 
 # Load .env configuration
 load_dotenv()
@@ -78,6 +80,7 @@ def generate_sql(prompt):
     else:
         raise ValueError("Unsupported AI_PROVIDER. Use 'OPENAI' or 'GEMINI'.")
 
+
 # Execute query
 def execute_query(sql):
     conn = connect_to_db()
@@ -130,8 +133,6 @@ with st.sidebar:
     else:
         st.info("No chat history yet.")
 
-# Main Input Area
-user_prompt = st.text_area("Ask something about your database:", placeholder="E.g. Show me all users who signed up in the last 7 days.")
 
 # Chat UI Display
 st.subheader("🗨️ Chat with Database")
@@ -152,6 +153,9 @@ if st.session_state.chat_history:
             else:
                 st.info("No results returned.")
 
+# Main Input Area
+user_prompt = st.text_area("Ask something about your database:", placeholder="E.g. Show me all users who signed up in the last 7 days.")
+
 # Generate & Execute Button
 if st.button("Generate & Execute SQL"):
     if not user_prompt.strip():
@@ -159,6 +163,9 @@ if st.button("Generate & Execute SQL"):
     else:
         with st.spinner(f"Generating SQL with {AI_PROVIDER}..."):
             sql_query = generate_sql(user_prompt)
+
+
+
 
         st.markdown(highlight_sql(sql_query, theme), unsafe_allow_html=True)
 

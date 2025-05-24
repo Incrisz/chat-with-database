@@ -34,6 +34,30 @@ cp .env.example .env
 streamlit run appV2.py
 ```
 
+# Deepseek was integrated in version 3 
+
+# create API keys for DEEPSEEK at 
+https://openrouter.ai/settings/keys
+
+
+# Just copy one
+# more deepseek alittle accurate models
+```bash
+deepseek/deepseek-chat-v3-0324:free
+qwen/qwen2.5-vl-3b-instruct:free
+qwen/qwen2.5-vl-32b-instruct:free
+qwen/qwen2.5-vl-72b-instruct:free
+deepseek/deepseek-r1-distill-qwen-32b:free
+```
+# perfectly accurate models
+```bash
+nousresearch/deephermes-3-llama-3-8b-preview:free
+google/gemma-2-9b-it:free
+google/gemma-3-27b-it:free
+deepseek/deepseek-prover-v2:free
+qwen/qwen-2.5-coder-32b-instruct:free
+```
+
 
 ## Other Apps like this are 
 https://www.askyourdatabase.com

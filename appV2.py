@@ -190,8 +190,6 @@ with st.sidebar:
     else:
         st.info("No chat history yet.")
 
-# Input area
-user_prompt = st.text_area("Ask something about your database:", placeholder="E.g. Show me all users who signed up in the last 7 days.")
 
 # Chat Display
 st.subheader("🗨️ Chat with Database")
@@ -210,6 +208,9 @@ if st.session_state.chat_history:
                 st.dataframe(record["data"], use_container_width=True, hide_index=True)
             else:
                 st.info("No results returned.")
+
+# Input area
+user_prompt = st.text_area("Ask something about your database:", placeholder="E.g. Show me all users who signed up in the last 7 days.")
 
 # Generate and Execute
 if st.button("Generate & Execute SQL"):

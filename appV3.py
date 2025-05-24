@@ -9,6 +9,8 @@ from pygments.lexers import SqlLexer
 from openai import OpenAI
 from pygments.formatters.html import HtmlFormatter
 import google.generativeai as genai
+import re
+
 
 st.set_page_config(page_title="DB Chat Assistant", layout="wide")
 load_dotenv()
@@ -185,6 +187,22 @@ def generate_sql(prompt):
     else:
         raise ValueError("Unsupported AI_PROVIDER. Use 'OPENAI', 'GEMINI', or 'DEEPSEEK'.")
 
+
+# Extract query
+def extract_sql(raw_sql):
+    # Remove Markdown fenced code blocks like ```sql ... ```
+    raw_sql = re.sub(r"```sql\s*([\s\S]*?)\s*```", r"\1", raw_sql, flags=re.IGNORECASE)
+    raw_sql = re.sub(r"```([\s\S]*?)```", r"\1", raw_sql)  # in case it's just ```...```
+
+    # Remove any leftover backticks or labels like 'sql'
+    raw_sql = raw_sql.replace("`", "").strip()
+
+    # Remove any extra 'sql' that was on a line by itself
+    lines = raw_sql.splitlines()
+    lines = [line for line in lines if line.strip().lower() != "sql"]
+    
+    return "\n".join(lines).strip()
+
 # Execute SQL query and fetch results
 def execute_query(sql):
     conn = connect_to_db()
@@ -237,8 +255,6 @@ with st.sidebar:
     else:
         st.info("No chat history yet.")
 
-# Input area
-user_prompt = st.text_area("Ask something about your database:", placeholder="E.g. Show me all users who signed up in the last 7 days.")
 
 # Chat Display
 st.subheader("🗨️ Chat with Database")
@@ -258,13 +274,20 @@ if st.session_state.chat_history:
             else:
                 st.info("No results returned.")
 
+# Input area
+user_prompt = st.text_area("Ask something about your database:", placeholder="E.g. Show me all users who signed up in the last 7 days.")
+
 # Generate and Execute
 if st.button("Generate & Execute SQL"):
     if not user_prompt.strip():
         st.warning("Please enter a prompt.")
     else:
         with st.spinner(f"Generating SQL with {ai_provider}..."):
-            sql_query = generate_sql(user_prompt)
+            # sql_query = generate_sql(user_prompt)
+            raw_sql = generate_sql(user_prompt)
+            sql_query = extract_sql(raw_sql)
+            st.code(raw_sql, language="markdown")
+            st.code(sql_query, language="sql")
 
         st.markdown(highlight_sql(sql_query, theme), unsafe_allow_html=True)
 
