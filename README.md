@@ -1,5 +1,7 @@
 # Chatdb.AI  App
 # For mysql and postgresql 
+# Deepseek was integrated in appV3 while ollama in appV4
+
 
 # Clone 
 ```bash
@@ -34,7 +36,6 @@ cp .env.example .env
 streamlit run appV2.py
 ```
 
-# Deepseek was integrated in version 3 
 
 # create API keys for DEEPSEEK at 
 https://openrouter.ai/settings/keys
