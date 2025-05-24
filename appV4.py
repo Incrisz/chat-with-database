@@ -22,6 +22,9 @@ load_dotenv()
 deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 deepseek_base_url = os.getenv("DEEPSEEK_API_BASE_URL", "https://api.deepseek.com")  # default if not set
 
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")  # default if not set
+
 
 if "config_expanded" not in st.session_state:
     st.session_state.config_expanded = True
