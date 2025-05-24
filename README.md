@@ -33,7 +33,7 @@ cp .env.example .env
 
 # Run
 ```bash
-streamlit run appV2.py
+streamlit run appV3.py
 ```
 
 
