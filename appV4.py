@@ -200,25 +200,35 @@ def generate_sql(prompt):
         model = os.getenv("OLLAMA_MODEL", "llama3")
 
         payload = {
-            "model": model,
+            "model": OLLAMA_MODEL,
             "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ]
+                {
+                    "role": "system",
+                    "content": "You are a SQL expert. Convert the user's natural language into SQL."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "stream": True
         }
 
         try:
-            response = requests.post(url, json=payload)
+            response = requests.post(url, json=payload, stream=True)
             response.raise_for_status()
-            # return response.json()["message"]["content"].strip()
-            try:
-                result = response.json()
-                return result.get("message", {}).get("content", "No content in response").strip()
-            except Exception as e:
-                return f"Error parsing Ollama response: {e}\nRaw response: {response.text}"
 
-        except Exception as e:
-            return f"Error communicating with Ollama: {e}"
+            sql_output = ""
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        data = json.loads(line.decode("utf-8"))
+                        sql_output += data.get("message", {}).get("content", "")
+                    except Exception as e:
+                        return f"Error decoding line: {e}\nLine: {line.decode('utf-8')}"
+            return sql_output.strip()
+        except requests.exceptions.RequestException as e:
+            return f"Request failed: {e}"
 
 
     elif ai_provider == "DEEPSEEK":
