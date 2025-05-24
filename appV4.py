@@ -11,6 +11,8 @@ from pygments.formatters.html import HtmlFormatter
 import google.generativeai as genai
 import re
 import requests
+import json
+import os
 
 
 
@@ -208,7 +210,13 @@ def generate_sql(prompt):
         try:
             response = requests.post(url, json=payload)
             response.raise_for_status()
-            return response.json()["message"]["content"].strip()
+            # return response.json()["message"]["content"].strip()
+            try:
+                result = response.json()
+                return result.get("message", {}).get("content", "No content in response").strip()
+            except Exception as e:
+                return f"Error parsing Ollama response: {e}\nRaw response: {response.text}"
+
         except Exception as e:
             return f"Error communicating with Ollama: {e}"
 
@@ -243,6 +251,28 @@ def extract_sql(raw_sql):
     lines = [line for line in lines if line.strip().lower() != "sql"]
     
     return "\n".join(lines).strip()
+
+# Send to Ollama
+def send_to_ollama(message):
+    url = f"{os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')}/api/chat"
+    headers = {
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "llama3",  # or the name of your Ollama model
+        "messages": [{"role": "user", "content": message}]
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+
+    # Debug: print raw response text
+    print("Raw response from Ollama:")
+    print(response.text)
+
+    # Optional: only use this if you're sure it's a single JSON object
+    # parsed = response.json()
+    # return parsed
+
 
 # Execute SQL query and fetch results
 def execute_query(sql):
