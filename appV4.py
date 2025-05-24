@@ -252,18 +252,20 @@ def generate_sql(prompt):
 
 # Extract query
 def extract_sql(raw_sql):
-    # Remove Markdown fenced code blocks like ```sql ... ```
+    # Remove Markdown code blocks (e.g., ```sql ... ```)
     raw_sql = re.sub(r"```sql\s*([\s\S]*?)\s*```", r"\1", raw_sql, flags=re.IGNORECASE)
-    raw_sql = re.sub(r"```([\s\S]*?)```", r"\1", raw_sql)  # in case it's just ```...```
-
-    # Remove any leftover backticks or labels like 'sql'
+    raw_sql = re.sub(r"```([\s\S]*?)```", r"\1", raw_sql)  # generic fallback
     raw_sql = raw_sql.replace("`", "").strip()
 
-    # Remove any extra 'sql' that was on a line by itself
-    lines = raw_sql.splitlines()
-    lines = [line for line in lines if line.strip().lower() != "sql"]
-    
-    return "\n".join(lines).strip()
+    # Remove lines that are purely explanatory
+    keywords = ['select', 'insert', 'update', 'delete', 'create', 'drop', 'alter']
+    sql_lines = []
+    for line in raw_sql.splitlines():
+        # Keep only lines that start with SQL keywords or are indented parts of queries
+        if any(line.strip().lower().startswith(k) for k in keywords) or line.strip().endswith(';') or line.strip().startswith("("):
+            sql_lines.append(line.strip())
+
+    return " ".join(sql_lines).strip()
 
 # Send to Ollama
 def send_to_ollama(message):
